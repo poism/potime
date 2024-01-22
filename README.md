@@ -2,7 +2,13 @@
 A simple bash CLI task timer that notifies, plays sounds and logs tasks to a timeclock file for processing with tools such as hledger.
 
 
+
 ## Installation
+
+Tested on:
+- Linux (Ubuntu 22.04.3 LTS with i3wm)
+- MacOS (Intel, MacOS 13.2 Ventura)
+
 
 ```
 # First ensure ~/bin/ exists and add ~/bin/ to your PATH if necessary..
@@ -11,6 +17,7 @@ git clone https://github.com/poism/potime.git
 ln -s $(pwd)/potime/potime ~/bin/potime
 
 ```
+
 
 ## Usage
 
@@ -141,20 +148,28 @@ $ hledger -f ~/potime.timeclock register -p 2024/1 --depth 2
 ```
 
 
+## Custom alarm and audio caveats
+
+You can add an `alarm.mp3` file and it will automatically be used if possible.
+
+On Linux, `paplay` is assumed to not support mp3 in which case we fall back to the `alarm.ogg`, but if you have`ffplay` (hopefully included with `ffmpeg`) then the mp3 will be used.
+
+On MacOS `afplay` does not support `.ogg` so we use a default bell sound, played once and then repeated for however many minutes of overage. If an mp3 is found that will be played instead.
 
 
 
 
-# Requirements
+
+## Requirements
 
  - `ffmpeg` or `pplay`
  - `hledger` (optional)
 
 
-# Further reading
+## Further reading
 
 - [hledger time budgets](https://hledger.org/time-planning.html#how-to-set-up-a-time-budget)
 - [hledger for processing timeclock files](https://hledger.org/1.32/hledger.html#timeclock)
 
-# Author
+## Author
 Sangpo Dorje

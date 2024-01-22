@@ -4,8 +4,21 @@
 
 thisdir="$( cd "$( dirname "$( realpath "${BASH_SOURCE[0]}" )" )" && pwd )"
 
-[[ -z "${TIMECLOCKFILE}" ]] && timeclockfile="$(readlink -f ~/potime.timeclock)" || timeclockfile="${TIMECLOCKFILE}"
-[[ -z "${TIMECLOCKSOUND}" ]] && timeclocksound="${thisdir}/alarm.ogg" || timeclocksound="${TIMECLOCKSOUND}"
+[[ -z "${TIMECLOCKFILE}" ]] && timeclockfile=~/potime.timeclock || timeclockfile="${TIMECLOCKFILE}"
+
+# If an alarm.mp3 exists we'll try to use it... easy to drop in without messing with env
+#FIXME: tidy this up, break out a function for the sound playback...
+defsoundogg="${thisdir}/alarm.ogg"
+defsoundmp3="${thisdir}/alarm.mp3"
+if [[ ! -z "${TIMECLOCKSOUND}" ]]; then
+	timeclocksound="${TIMECLOCKSOUND}"
+elif [ -f "${defsoundmp3}" ]; then
+	timeclocksound="${defsoundmp3}"
+else
+	# Sadly mac afplay cannot play .ogg and linux paplay cant play .mp3
+	timeclocksound="${defsoundogg}"
+fi
+
 
 function helpmsg() {
 	echo -e "\n"
@@ -41,7 +54,7 @@ function progress() {
 
 function extendtimer() {
 	echo -e "\n"
-	echo "Do you wish to extend the current task timer? Enter additional integer minutes to extend, or [0/n/nothing] to end timer."
+	echo "Do you wish to extend the current task timer? Enter additional integer minutes to extend, or anything else to exit."
 	read -r -p "--> " response
 	if [ ${response} == 0 ]; then
 		false
@@ -68,7 +81,7 @@ function confirm() {
 }
 
 function runtimer() {
-
+	interrupted=0
 	echo -e "${hrule}"
 	echo "FILE: ${timeclockfile}"
 	echo "TIME: ${maxminutes} minutes, starting at $(date +'%r')"
@@ -76,40 +89,76 @@ function runtimer() {
 		echo "EXTEND: Task duration extended to ${totalminutes} minutes since originally starting at ${starttimesimple}"
 	fi
 	echo "TASK: ${task}"
-
-	# Catch any CTRL+C or exits to clockout function
-	trap clockout SIGINT
-	
 	progress ${maxseconds}
+
+	echo -e "\n"
+	echo "Press CTRL+c to stop timer"
+	echo -e "\n"
+	notifytitle="potime alert"
+	notifymsg="DONE: ${totalminutes} minutes for ${account}!"
+	soundext="${timeclocksound: -4}"
+	overtime=0
+	unset prevovertime
 	
-	notify-send "TimeClocker: ${maxminutes} minutes has passed for ${task}!"
+	while [[ ${interrupted} -eq 0 ]]; do
+		if [[ ${prevovertime} == ${overtime} ]]; then
+			sleep 2
 
+		else
+			echo -ne "\r${notifymsg}"
+			if [[ "$OSTYPE" == "darwin"* ]]; then
+			        # Mac OSX
+				osascript -e "display notification \"${notifymsg}\" with title \"${notifytitle}\""
+				if [ "${soundext}" != ".ogg" ]; then
+					# macos afplay cannot play ogg, but can do mp3 or whatever else :(
+					afplay "${timeclocksound}"
+				else
+					for (( c=0; c<=${overtime}; c++ )); do
+						#chime for however minutes overtime
+						afplay /System/Library/Sounds/Pop.aiff 
+					done
+				fi
 
-	if command -v xffplay &> /dev/null; then
-		# ffmpeg works with mp3
-		ffplay -loglevel quiet -nodisp -loop 0 "${timeclocksound}"
-	else
-		# paplay does not work for mp3
-		while true; do
-			paplay "${timeclocksound}"
-		done
-	fi
+			else
+				# Linux
+				if command -v notify-send &> /dev/null; then
+					notify-send "${notifytitle}: ${notifymsg}"
+				fi
+
+				if command -v ffplay &> /dev/null; then
+					# ffmpeg works with mp3
+					ffplay -loglevel quiet -nodisp -autoexit "${timeclocksound}"
+				elif command -v paplay &> /dev/null; then
+					# paplay does not work for mp3
+					if [ "${soundext}" == ".mp3" ]; then
+						paplay "${defsoundogg}"
+					else
+						paplay "${timeclocksound}"
+					fi
+				fi
+			fi
+		fi
+		prevovertime=${overtime}
+		overtime=$((${SECONDS}/60-${totalminutes})) 
+		notifymsg="OVERDUE: ${overtime} minutes past ${totalminutes} minute limit for ${account}!"
+	done
 }
 
 function clockout() {
+	interrupted=1
 	endtime=$(date "+%Y/%m/%d %H:%M:%S")
 	duration=$SECONDS
 	echo -e "\n"
-	echo "FINISHED: ${account} duration was $(( ${duration} / 60)) minutes and $(( ${duration} % 60)) seconds."
-	if [ ${totalminutes} -gt ${maxminutes} ]; then
-		echo "EXTEND: Task duration was ${totalminutes} total minutes since originally starting at ${starttimesimple}"
-	fi
+	echo -e "${hrule}"
+	echo "FINISHED: Task ${account} duration was $(( ${duration} / 60)) minutes and $(( ${duration} % 60)) seconds."
+	echo -e "${hrule}"
 
 	if extendtimer; then
 		echo -e "\n"
-		echo "Extending timer for ${account} by ${totalminutes} minutes..."
+		echo "Extending timer for ${account} by ${maxminutes} additional minutes..."
 		echo -e "\n"
-		runtimer
+		return
+		#runtimer
 	else
 		if [ -z "${descriptionetc}" ]; then
 			echo "INPUT 'optional description ; comments, tag:tag1,tag2' OR press Enter"
@@ -119,12 +168,12 @@ function clockout() {
 				task="${task}  "
 			fi
 		fi
-		echo -e "${hrule}"
 		echo "i $starttime $task" >> "${timeclockfile}"
 		echo "o $endtime" >> "${timeclockfile}"
 		echo -e "${hrule}"
 		tail -n 2 "${timeclockfile}"
 		if command -v hledger &> /dev/null; then
+			echo -e "${hrule}"
 			echo "Balance for this ${account} account:"
 			hledger -f "${timeclockfile}" balance ${account}
 		else
@@ -144,8 +193,6 @@ else
 	helpmsg
 	exit 1
 fi
-
-
 account="${2}"
 descriptionetc="${3}"
 
@@ -162,7 +209,12 @@ totalminutes=${maxminutes}
 
 hrule="______________________________________________________________\n"
 
+alldone=0
 
-runtimer
-
+# Catch any CTRL+C or exits to clockout function
+trap clockout SIGINT
+while [[ ${alldone} -eq 0 ]]; do
+	sleep 1
+	runtimer
+done
 
