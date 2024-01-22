@@ -119,12 +119,13 @@ function clockout() {
 				task="${task}  "
 			fi
 		fi
+		echo -e "${hrule}"
 		echo "i $starttime $task" >> "${timeclockfile}"
 		echo "o $endtime" >> "${timeclockfile}"
-		echo -e "\n"
+		echo -e "${hrule}"
 		tail -n 2 "${timeclockfile}"
 		if command -v hledger &> /dev/null; then
-			echo -e "\n"
+			echo "Balance for this ${account} account:"
 			hledger -f "${timeclockfile}" balance ${account}
 		else
 			echo "WARNING: hledger not installed, cannot check balances."

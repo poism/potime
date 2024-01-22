@@ -1,5 +1,5 @@
 # potime
-A simple bash CLI timer that logs tasks to a timeclock file.
+A simple bash CLI task timer that notifies, plays sounds and logs tasks to a timeclock file for processing with tools such as hledger.
 
 
 ## Installation
@@ -14,12 +14,11 @@ ln -s $(pwd)/potime/potime ~/bin/potime
 
 ## Usage
 
-1. You call the script by assigning an amount of time to designate to a specified account (you can add optional description, comments and tags now or later)
-Then
+1. Call the script with how many minutes you wish to spend on whichever account.  You can also specify optional optional description, comments and tags initially or after the timer stops.
 2. It displays a progress bar timer and at completion displays a notification and plays music.
-3. Press CTRL+c to stop the music
-4. It will allow you to add more time to your previous task if you wish to continue.
-5. If you didn't provide description, comments or tags at the start, it will allow you to do so now.
+3. Press CTRL+c to stop the music and end the timer.
+4. It will allow you to extend the timer if you wish to continue working on the same task.
+5. You will be given a last chance to provide description, comments or tags if you didn't previously.
 6. It writes to your ~/potime.timeclock file.
 
 
@@ -55,9 +54,13 @@ Do you wish to extend the current task timer? Enter additional integer minutes t
 --> n
 
 
+______________________________________________________________
+
 i 2024/01/21 12:00:00 POISM:adm  get frustrated using google calendar
 o 2024/01/21 12:45:00
+______________________________________________________________
 
+Balance for this POISM:adm account:
 
                0.75h  POISM:adm
 --------------------
