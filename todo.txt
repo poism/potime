@@ -1,0 +1,3 @@
+dockerize
+fzf for accounts autocomplete
+integrate hledger commands for faster reviews
