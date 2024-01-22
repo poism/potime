@@ -2,7 +2,7 @@
 A simple bash CLI timer that logs tasks to a timeclock file.
 
 
-# Installation
+## Installation
 
 ```
 # First ensure ~/bin/ exists and add ~/bin/ to your PATH if necessary..
@@ -12,9 +12,33 @@ ln -s $(pwd)/potime/potime ~/bin/potime
 
 ```
 
-# Usage examples
+## Usage
+
+1. You call the script by assigning an amount of time to designate to a specified account (you can add optional description, comments and tags now or later)
+Then
+2. It displays a progress bar timer and at completion displays a notification and plays music.
+3. Press CTRL+c to stop the music
+4. It will allow you to add more time to your previous task if you wish to continue.
+5. If you didn't provide description, comments or tags at the start, it will allow you to do so now.
+6. It writes to your ~/potime.timeclock file.
+
 
 ```
+potime --help
+
+
+         USAGE:  potime [minutes] [account:optionalsubaccount] '[optional description ; comments, tag:tag1,tag2]'
+      EXAMPLES:  potime 25 POISM:DEV 'timeclocker ; added help messages, tags:dev,poism,timeclocker'
+   ENVIRONMENT:  export TIMECLOCKFILE=~/timeclocker.timeclock
+CURRENT CONFIG:
+                 TIMECLOCKFILE: /home/sangpo/potime.timeclock
+                 TIMECLOCKSOUND: /datapool/projects/POISM/repos/potime/alarm.ogg
+```
+
+## Usage Examples
+
+```
+
 potime 45 POISM:adm 'get frustrated using google calendar'
 
 potime 90 POISM:dev 'potimer app ; make a bash app as an act of pocrastination, tag:dev,docs,potimer'
