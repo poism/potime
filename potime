@@ -1,0 +1,167 @@
+#!/bin/bash
+# Description: potime - a simple cli task timer that outputs to timeclock files
+# Author: Sangpo Dorje
+
+thisdir="$( cd "$( dirname "$( realpath "${BASH_SOURCE[0]}" )" )" && pwd )"
+
+[[ -z "${TIMECLOCKFILE}" ]] && timeclockfile="$(readlink -f ~/potime.timeclock)" || timeclockfile="${TIMECLOCKFILE}"
+[[ -z "${TIMECLOCKSOUND}" ]] && timeclocksound="${thisdir}/alarm.ogg" || timeclocksound="${TIMECLOCKSOUND}"
+
+function helpmsg() {
+	echo -e "\n"
+	echo "         USAGE:  potime [minutes] [account:optionalsubaccount] '[optional description ; comments, tag:tag1,tag2]'"
+	echo "      EXAMPLES:  potime 25 POISM:DEV 'timeclocker ; added help messages, tags:dev,poism,timeclocker'"
+	echo "   ENVIRONMENT:  export TIMECLOCKFILE=~/timeclocker.timeclock"
+	echo "CURRENT CONFIG:"
+	echo "                 TIMECLOCKFILE: ${timeclockfile}"
+	echo "                 TIMECLOCKSOUND: ${timeclocksound}"
+	echo -e "\n"
+}
+
+if [ -z "${1}" ] || [ -z "${2}" ] || [ "${1}" == "-h" ] || [ "${1}" == "--help" ]; then
+	helpmsg
+	exit 1
+fi
+
+function progress() {
+	progresswidth=40
+	maxseconds=${1}
+	for ((sec=1; sec<=${maxseconds}; sec++)); do
+		pct=$((100*sec/(maxseconds)))
+		progress=$(($progresswidth*$pct/100))
+		incomplete=$(($progresswidth-$progress))
+		progressbar=$(printf "%${progress}s" | tr " " "#")
+		incompletebar=$(printf "%${incomplete}s" | tr " " "-")
+		m=$((sec / 60))
+		s=$((sec % 60))
+		echo -ne "\r[${progressbar}${incompletebar}] ${pct}% ($m:$s)"
+		sleep 1
+	done
+}
+
+function extendtimer() {
+	echo -e "\n"
+	echo "Do you wish to extend the current task timer? Enter additional integer minutes to extend, or [0/n/nothing] to end timer."
+	read -r -p "--> " response
+	if [ ${response} == 0 ]; then
+		false
+	elif [[ ${response} =~ ^[0-9]+$ ]]; then
+		maxminutes=${response}
+		maxseconds=$(( ${maxminutes} * 60))
+		totalminutes=$((totalminutes + ${maxminutes}))
+		true
+	else
+		false
+	fi
+}
+
+function confirm() {
+	read -r -p "${1:-Confirm? [y/n]} " response
+	case "${response}" in
+		[yY][eE][sS]|[yY])
+			true
+			;;
+		*)
+			false
+			;;
+	esac
+}
+
+function runtimer() {
+
+	echo -e "${hrule}"
+	echo "FILE: ${timeclockfile}"
+	echo "TIME: ${maxminutes} minutes, starting at $(date +'%r')"
+	if [ ${totalminutes} -gt 0 ]; then
+		echo "EXTEND: Task duration extended to ${totalminutes} minutes since originally starting at ${starttimesimple}"
+	fi
+	echo "TASK: ${task}"
+
+	# Catch any CTRL+C or exits to clockout function
+	trap clockout SIGINT
+	
+	progress ${maxseconds}
+	
+	notify-send "TimeClocker: ${maxminutes} minutes has passed for ${task}!"
+
+
+	if command -v xffplay &> /dev/null; then
+		# ffmpeg works with mp3
+		ffplay -loglevel quiet -nodisp -loop 0 "${timeclocksound}"
+	else
+		# paplay does not work for mp3
+		while true; do
+			paplay "${timeclocksound}"
+		done
+	fi
+}
+
+function clockout() {
+	endtime=$(date "+%Y/%m/%d %H:%M:%S")
+	duration=$SECONDS
+	echo -e "\n"
+	echo "FINISHED: ${account} duration was $(( ${duration} / 60)) minutes and $(( ${duration} % 60)) seconds."
+	if [ ${totalminutes} -gt 0 ]; then
+		echo "EXTEND: Task duration was ${totalminutes} total minutes since originally starting at ${starttimesimple}"
+	fi
+
+	if extendtimer; then
+		echo -e "\n"
+		echo "Extending timer for ${account} by ${totalminutes} minutes..."
+		echo -e "\n"
+		runtimer
+	else
+		if [ -z "${descriptionetc}" ]; then
+			echo "INPUT 'optional description ; comments, tag:tag1,tag2' OR press Enter"
+			read -p "-->  " descriptionetc
+			descriptionetc="${descriptionetc//;/\;}"
+			if [ ! -z "${descriptionetc}" ]; then
+				task="${task}  "
+			fi
+		fi
+		echo "i $starttime $task" >> "${timeclockfile}"
+		echo "o $endtime" >> "${timeclockfile}"
+		echo -e "\n"
+		tail -n 2 "${timeclockfile}"
+		if command -v hledger &> /dev/null; then
+			echo -e "\n"
+			hledger -f "${timeclockfile}" balance ${account}
+		else
+			echo "WARNING: hledger not installed, cannot check balances."
+		fi
+		echo -e "\n"
+		exit
+	fi
+}
+
+
+if [[ $1 =~ ^[0-9]+$ ]]; then
+	maxminutes=${1}
+	maxseconds=$(( ${maxminutes} * 60))
+else
+	echo "ERROR: duration minutes must be an integer."
+	helpmsg
+	exit 1
+fi
+
+
+account="${2}"
+descriptionetc="${3}"
+
+if [ -z "${descriptionetc}" ]; then
+	task="${account}"
+else
+	task="${account}  ${descriptionetc//;/\;}"
+fi
+
+SECONDS=0
+starttime=$(date "+%Y/%m/%d %H:%M:%S")
+starttimesimple="$(date +'%r')"
+totalminutes=${maxminutes}
+
+hrule="______________________________________________________________\n"
+
+
+runtimer
+
+
