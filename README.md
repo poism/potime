@@ -37,9 +37,37 @@ CURRENT CONFIG:
 
 ## Usage Examples
 
+
+### One example with outputs:
 ```
 
 potime 45 POISM:adm 'get frustrated using google calendar'
+______________________________________________________________
+
+FILE: /home/sangpo/potime.timeclock
+TIME: 45 minutes, starting at 12:00:00 PM
+TASK: POISM:adm  get frustrated using google calendar
+[########################################] 100% (1:0)^C
+
+FINISHED: POISM:adm duration was 45 minutes and 0 seconds.
+
+Do you wish to extend the current task timer? Enter additional integer minutes to extend, or [0/n/nothing] to end timer.
+--> n
+
+
+i 2024/01/21 12:00:00 POISM:adm  get frustrated using google calendar
+o 2024/01/21 12:45:00
+
+
+               0.75h  POISM:adm
+--------------------
+               0.75h
+
+```
+
+### More examples output ommitted
+
+```
 
 potime 90 POISM:dev 'potimer app ; make a bash app as an act of pocrastination, tag:dev,docs,potimer'
 

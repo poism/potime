@@ -72,7 +72,7 @@ function runtimer() {
 	echo -e "${hrule}"
 	echo "FILE: ${timeclockfile}"
 	echo "TIME: ${maxminutes} minutes, starting at $(date +'%r')"
-	if [ ${totalminutes} -gt 0 ]; then
+	if [ ${totalminutes} -gt ${maxminutes} ]; then
 		echo "EXTEND: Task duration extended to ${totalminutes} minutes since originally starting at ${starttimesimple}"
 	fi
 	echo "TASK: ${task}"
@@ -101,7 +101,7 @@ function clockout() {
 	duration=$SECONDS
 	echo -e "\n"
 	echo "FINISHED: ${account} duration was $(( ${duration} / 60)) minutes and $(( ${duration} % 60)) seconds."
-	if [ ${totalminutes} -gt 0 ]; then
+	if [ ${totalminutes} -gt ${maxminutes} ]; then
 		echo "EXTEND: Task duration was ${totalminutes} total minutes since originally starting at ${starttimesimple}"
 	fi
 
