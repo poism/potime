@@ -21,12 +21,18 @@ ln -s $(pwd)/potime/potime ~/bin/potime
 
 ## Usage
 
+
+
 1. Call the script with how many minutes you wish to spend on whichever account.  You can also specify optional optional description, comments and tags initially or after the timer stops.
 2. It displays a progress bar timer and at completion displays a notification and plays music.
 3. Press CTRL+c to stop the music and end the timer.
 4. It will allow you to extend the timer if you wish to continue working on the same task.
 5. You will be given a last chance to provide description, comments or tags if you didn't previously.
 6. It writes to your ~/potime.timeclock file.
+
+*Special Characters*
+Avoid using special characters for descriptions and comments.
+For accounts use colon `:` to define account hierarchies. Do not use spaces.
 
 
 ```
@@ -130,7 +136,7 @@ $ hledger -f ~/potime.timeclock bal -p 2024/1
 ```
 
 ```
-$ hledger -f ~/potime.timeclock bal -p 2024/1 --depth 1
+$ hledger -f ~/*.timeclock bal -p 2024/1 --depth 1
                0.50h  PERS
                2.50h  POISM
 --------------------
@@ -139,14 +145,28 @@ $ hledger -f ~/potime.timeclock bal -p 2024/1 --depth 1
 ```
 
 ```
-$ hledger -f ~/potime.timeclock register -p 2024/1 --depth 2 
-2024-01-21 get fustrated using google calendar                                              (POISM:adm)    0.75h    0.75h
-2024-01-21 potimer app ; make a bash app as an act of pocrastination, tag:dev,docs,potimer  (POISM:dev)    1.50h    2.25h
-2024-01-21 14:31-15:01                                                                      (PERS:lunch)   0.50h    2.75h
-2024-01-21 potimer app ; wrote readme and upload to github, tag:dev,docs,potimer            (POISM:dev)    0.25h    3.00h
+$ hledger -f ~/*.timeclock bal -D POISM
+Balance changes in 2024-01-21..2024-01-22:
 
+           || 2024-01-21  2024-01-22 
+===========++========================
+ POISM:adm ||      0.77h           0 
+ POISM:dev ||      1.77h       0.37h 
+-----------++------------------------
+           ||      2.54h       0.37h 
 ```
 
+```
+$ hledger -f ~/*.timeclock bal -D --depth 1
+Balance changes in 2024-01-21..2024-01-22:
+
+       || 2024-01-21  2024-01-22 
+=======++========================
+ PERS  ||      0.50h       1.41h 
+ POISM ||      2.54h       0.37h 
+-------++------------------------
+       ||      3.04h       1.78h 
+```
 
 ## Custom alarm and audio caveats
 

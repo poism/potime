@@ -1,3 +1,3 @@
 dockerize
 fzf for accounts autocomplete
-integrate hledger commands for faster reviews
+figure out tag syntax and functionality

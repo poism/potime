@@ -4,7 +4,7 @@
 
 thisdir="$( cd "$( dirname "$( realpath "${BASH_SOURCE[0]}" )" )" && pwd )"
 
-[[ -z "${TIMECLOCKFILE}" ]] && timeclockfile=~/potime.timeclock || timeclockfile="${TIMECLOCKFILE}"
+[[ -z "${TIMECLOCKFILE}" ]] && timeclockfile=~/${USER}.timeclock || timeclockfile="${TIMECLOCKFILE}"
 
 # If an alarm.mp3 exists we'll try to use it... easy to drop in without messing with env
 #FIXME: tidy this up, break out a function for the sound playback...
@@ -19,12 +19,11 @@ else
 	timeclocksound="${defsoundogg}"
 fi
 
-
 function helpmsg() {
 	echo -e "\n"
-	echo "         USAGE:  potime [minutes] [account:optionalsubaccount] '[optional description ; comments, tag:tag1,tag2]'"
-	echo "      EXAMPLES:  potime 25 POISM:DEV 'timeclocker ; added help messages, tags:dev,poism,timeclocker'"
-	echo "   ENVIRONMENT:  export TIMECLOCKFILE=~/timeclocker.timeclock"
+	echo "         USAGE:  potime [minutes] [account:optionalsubaccount] [optional description]"
+	echo "      EXAMPLES:  potime 25 POISM:DEV timeclocker"
+	echo "   ENVIRONMENT:  export TIMECLOCKFILE=~/yourusername.timeclock"
 	echo "CURRENT CONFIG:"
 	echo "                 TIMECLOCKFILE: ${timeclockfile}"
 	echo "                 TIMECLOCKSOUND: ${timeclocksound}"
@@ -53,10 +52,10 @@ function progress() {
 }
 
 function extendtimer() {
-	echo -e "\n"
-	echo "Do you wish to extend the current task timer? Enter additional integer minutes to extend, or anything else to exit."
+	echo "Do you wish to extend the current task timer?"
+	echo "Enter additional integer minutes to extend, or anything else to exit."
 	read -r -p "--> " response
-	if [ ${response} == 0 ]; then
+	if [[ ${response} == 0 ]]; then
 		false
 	elif [[ ${response} =~ ^[0-9]+$ ]]; then
 		maxminutes=${response}
@@ -86,7 +85,7 @@ function runtimer() {
 	echo "FILE: ${timeclockfile}"
 	echo "TIME: ${maxminutes} minutes, starting at $(date +'%r')"
 	if [ ${totalminutes} -gt ${maxminutes} ]; then
-		echo "EXTEND: Task duration extended to ${totalminutes} minutes since originally starting at ${starttimesimple}"
+		echo "EXTEND: Task extended ${totalminutes} minutes. Originally was ${originalminutes} minutes, starting at ${starttimesimple}"
 	fi
 	echo "TASK: ${task}"
 	progress ${maxseconds}
@@ -148,9 +147,16 @@ function clockout() {
 	interrupted=1
 	endtime=$(date "+%Y/%m/%d %H:%M:%S")
 	duration=$SECONDS
+	clockhrs=$(( ${duration} / 3600 ))
+	clockmin=$(( ${duration} % 3600 / 60))
+	clockminonly=$(( ${duration} / 60))
+	clocksec=$(( ${duration} % 60))
+	durationstr="${clockminonly} minutes ${clocksec} seconds (originally ${originalminutes} minutes)"
+	durshortstr="${clockhrs}h${clockmin}m${clocksec}s"
 	echo -e "\n"
 	echo -e "${hrule}"
-	echo "FINISHED: Task ${account} duration was $(( ${duration} / 60)) minutes and $(( ${duration} % 60)) seconds."
+	echo "TASK: ${task}"
+	echo "TIMER: ${durationstr}."
 	echo -e "${hrule}"
 
 	if extendtimer; then
@@ -160,22 +166,34 @@ function clockout() {
 		return
 		#runtimer
 	else
-		if [ -z "${descriptionetc}" ]; then
-			echo "INPUT 'optional description ; comments, tag:tag1,tag2' OR press Enter"
-			read -p "-->  " descriptionetc
-			descriptionetc="${descriptionetc//;/\;}"
-			if [ ! -z "${descriptionetc}" ]; then
-				task="${task}  "
-			fi
+		task="${task} (${durshortstr})"
+		echo "Enter any additional alphanumeric comments or press Enter"
+		read -p "-->  " comments
+		if [ ! -z "${comments}" ]; then
+			commentsclean="${comments//[^[:alnum:-_\. ]]/_}"
+			task="${task} ; ${commentsclean}"
 		fi
+		#FIXME: figure out how hledger tags work...
+		#echo "INPUT any tags, like: tag1:value1, tag2:value2, tag3:, tag4:  and or press Enter"
+		#read -p "-->  " tags
+		#if [ ! -z "${tags}" ]; then
+		#	task="${task} ${tags}"
+		#fi
+		echo -e "${hrule}"
+		echo "CLOCKED TASK: ${task}"
+		echo "CLOCKED TIME: ${durationstr}"
+
 		echo "i $starttime $task" >> "${timeclockfile}"
 		echo "o $endtime" >> "${timeclockfile}"
 		echo -e "${hrule}"
 		tail -n 2 "${timeclockfile}"
 		if command -v hledger &> /dev/null; then
 			echo -e "${hrule}"
-			echo "Balance for this ${account} account:"
+			echo "BALANCE for this ${account} account:"
 			hledger -f "${timeclockfile}" balance ${account}
+			echo -e "${hrule}"
+			echo "TODAY'S BALANCE for all accounts:"
+			hledger -f "${timeclockfile}" balance -D
 		else
 			echo "WARNING: hledger not installed, cannot check balances."
 		fi
@@ -194,17 +212,15 @@ else
 	exit 1
 fi
 account="${2}"
-descriptionetc="${3}"
+description="${@:3}"
+descriptionclean="${description//[^[:alnum:-_\. ]]/_}"
 
-if [ -z "${descriptionetc}" ]; then
-	task="${account}"
-else
-	task="${account}  ${descriptionetc//;/\;}"
-fi
+task="${account}  ${descriptionclean}"
 
 SECONDS=0
 starttime=$(date "+%Y/%m/%d %H:%M:%S")
 starttimesimple="$(date +'%r')"
+originalminutes=${maxminutes}
 totalminutes=${maxminutes}
 
 hrule="______________________________________________________________\n"
