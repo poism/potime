@@ -3,6 +3,7 @@
 # Author: Sangpo Dorje
 
 thisdir="$( cd "$( dirname "$( realpath "${BASH_SOURCE[0]}" )" )" && pwd )"
+PATH=${PATH}:${thisdir}
 
 [[ -z "${TIMECLOCKFILE}" ]] && timeclockfile=~/${USER}.timeclock || timeclockfile="${TIMECLOCKFILE}"
 
@@ -34,6 +35,14 @@ if [ -z "${1}" ] || [ -z "${2}" ] || [ "${1}" == "-h" ] || [ "${1}" == "--help" 
 	helpmsg
 	exit 1
 fi
+
+function installhledger() {
+	hledgerversion="1.32.2"
+	[[ "$OSTYPE" == "darwin"* ]] && osstr="mac" || osstr="linux"
+	curl -L https://github.com/simonmichael/hledger/releases/download/${hledgerversion}/hledger-${osstr}-x64.zip -o "${thisdir}/hledger-${osstr}-x64.zip" && \
+	unzip "${thisdir}/hledger-${osstr}-x64.zip" -d "${thisdir}/" && rm "${thisdir}/hledger-${osstr}-x64.zip" && \
+	tar -xf "${thisdir}/hledger-${osstr}-x64.tar" -C "${thisdir}/" && rm "${thisdir}/hledger-${osstr}-x64.tar"
+}
 
 function progress() {
 	progresswidth=40
@@ -187,6 +196,14 @@ function clockout() {
 		echo "o $endtime" >> "${timeclockfile}"
 		echo -e "${hrule}"
 		tail -n 2 "${timeclockfile}"
+		if ! command -v hledger &> /dev/null; then
+			echo "WARNING: hledger not installed, cannot check balances."
+			echo "Do you wish to install hledger?"
+			if confirm; then
+				installhledger
+			fi
+		fi
+			
 		if command -v hledger &> /dev/null; then
 			echo -e "${hrule}"
 			echo "BALANCE for this ${account} account:"
