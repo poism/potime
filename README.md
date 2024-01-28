@@ -9,7 +9,14 @@ This tool is designed to work along with other plaintext cli productivity tools.
 
 Tested on:
 - Linux (Ubuntu 22.04.3 LTS with i3wm)
+
+
+*MACOS COMPATIBILITY IS BROKEN ON MAIN*
+
+The `macos` branch contains last working version for mac.
 - MacOS (Intel, MacOS 13.2 Ventura)
+
+Basically the `date` command on macos cannot do the calculations that we are using for gcalcli and retroactive features..
 
 
 ```
