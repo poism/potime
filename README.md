@@ -56,10 +56,21 @@ Avoid using special characters for descriptions and comments, they will be remov
 For accounts use colon `:` to define account hierarchies. Do not use spaces in account names.
 
 
+## Viewing data
+
+For convenience you can use this script as a wrapper for hledger.
+It simply passes all args to hledger using the same timeclock file as is configured for time tracking.
+Basically `potime view bal -D` becomes a shortcut for `hledger -f ~/username.timeclock bal -D`
+
+
+
+
 ```
 potime --help
          USAGE:  potime [minutes] [account:optionalsubaccount] '[optional description ; comments, tag:tag1,tag2]'
       EXAMPLES:  potime 25 POISM:DEV potime app; added help messages, tags:dev,poism,timeclocker'
+    VIEW_USAGE:  potime view [any hledger args]
+ VIEW_EXAMPLES:  potime view balance --daily
    ENVIRONMENT:  export TIMECLOCKFILE=~/yourusername.timeclock; export GCALENDARNAME="UNSPECIFIED"
 CURRENT CONFIG:
                  TIMECLOCKFILE: /home/sangpo/sangpo.timeclock
@@ -116,7 +127,8 @@ potime 15 POISM:dev 'potime app ; wrote readme and upload to github, tag:dev,doc
 ## Analyzing your timeclock examples
 
 ```
-$ hledger -f ~/sangpo.timeclock bal -W
+#Note the full command is: hledger -f ~/sangpo.timeclock bal -W
+$ potime view bal -W
 Balance changes in 2024-01-15W03:
 
             || 2024-01-15W03 
@@ -130,7 +142,7 @@ Balance changes in 2024-01-15W03:
 ```
 
 ```
-$ hledger -f ~/sangpo.timeclock print -W
+$ potime view print -W
 2024-01-21 * get fustrated using google calendar
     (POISM:adm)           0.75h
 
@@ -146,7 +158,7 @@ $ hledger -f ~/sangpo.timeclock print -W
 ```
 
 ```
-$ hledger -f ~/sangpo.timeclock bal -p 2024/1
+$ potime view bal -p 2024/1
                0.50h  PERS:lunch
                0.75h  POISM:adm
                1.75h  POISM:dev
@@ -156,7 +168,7 @@ $ hledger -f ~/sangpo.timeclock bal -p 2024/1
 ```
 
 ```
-$ hledger -f ~/*.timeclock bal -p 2024/1 --depth 1
+$ potime view bal -p 2024/1 --depth 1
                0.50h  PERS
                2.50h  POISM
 --------------------
@@ -165,7 +177,7 @@ $ hledger -f ~/*.timeclock bal -p 2024/1 --depth 1
 ```
 
 ```
-$ hledger -f ~/*.timeclock bal -D POISM
+$ potime view bal -D POISM
 Balance changes in 2024-01-21..2024-01-22:
 
            || 2024-01-21  2024-01-22 
@@ -177,7 +189,7 @@ Balance changes in 2024-01-21..2024-01-22:
 ```
 
 ```
-$ hledger -f ~/*.timeclock bal -D --depth 1
+$ potime view bal -D --depth 1
 Balance changes in 2024-01-21..2024-01-22:
 
        || 2024-01-21  2024-01-22 

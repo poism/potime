@@ -25,6 +25,8 @@ function helpmsg() {
 	echo -e "\n"
 	echo "         USAGE:  potime [minutes] [account:optionalsubaccount] [optional description]"
 	echo "      EXAMPLES:  potime 25 POISM:DEV potime app"
+	echo "    VIEW_USAGE:  potime view [any hledger args]"
+	echo " VIEW_EXAMPLES:  potime view balance --daily"
 	echo '   ENVIRONMENT:  export TIMECLOCKFILE=~/yourusername.timeclock; export GCALENDARNAME="TimeClock"'
 	echo "CURRENT CONFIG:"
 	echo "                 TIMECLOCKFILE: ${timeclockfile}"
@@ -32,8 +34,11 @@ function helpmsg() {
 	echo "                 GCALENDARNAME: ${gcalcalendarname}"
 	echo -e "\n"
 }
+if [ "${1}" == "view" ]; then
+	hledger -f "${timeclockfile}" "${@:2}"
+	exit 0
 
-if [ -z "${1}" ] || [ -z "${2}" ] || [ "${1}" == "-h" ] || [ "${1}" == "--help" ]; then
+elif [ -z "${1}" ] || [ -z "${2}" ] || [ "${1}" == "-h" ] || [ "${1}" == "--help" ]; then
 	helpmsg
 	exit 1
 fi
@@ -255,7 +260,6 @@ function clockout() {
 		exit
 	fi
 }
-
 
 if [[ $1 =~ ^[0-9]+$ ]]; then
 	maxminutes=${1}
