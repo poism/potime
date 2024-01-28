@@ -67,8 +67,8 @@ Basically `potime view bal -D` becomes a shortcut for `hledger -f ~/username.tim
 
 ```
 potime --help
-         USAGE:  potime [minutes] [account:optionalsubaccount] '[optional description ; comments, tag:tag1,tag2]'
-      EXAMPLES:  potime 25 POISM:DEV potime app; added help messages, tags:dev,poism,timeclocker'
+         USAGE:  potime [minutes] [account:optionalsubaccount] [optional description]
+      EXAMPLES:  potime 25 POISM:DEV potime app
     VIEW_USAGE:  potime view [any hledger args]
  VIEW_EXAMPLES:  potime view balance --daily
    ENVIRONMENT:  export TIMECLOCKFILE=~/yourusername.timeclock; export GCALENDARNAME="UNSPECIFIED"
@@ -82,35 +82,98 @@ CURRENT CONFIG:
 
 
 ### One example with outputs:
+
+Adding a 1 minute timer on task...
+
 ```
-
-potime 45 POISM:adm 'get frustrated using google calendar'
-______________________________________________________________
-
+sangpo@ubu-po:~$ potime 1 POISM:dev potimer
+______________________________________________________________ 
+ 
 FILE: /home/sangpo/sangpo.timeclock
-TIME: 45 minutes, starting at 12:00:00 PM
-TASK: POISM:adm  get frustrated using google calendar
-[########################################] 100% (1:0)^C
+TIME: 1 minutes, starting at 10:02:21 AM 
+TASK: POISM:dev  potimer 
+[########################################] 100% (1:0)
+ 
+Press CTRL+c to stop timer 
+ 
+ 
+DONE: 1 minutes for POISM:dev!^C 
+ 
+______________________________________________________________ 
+ 
+TASK: POISM:dev  potimer 
+TIMER: 1 minutes 7 seconds (originally 1 minutes). 
+______________________________________________________________ 
+ 
+Do you wish to extend the current task timer?
+Enter additional integer minutes to extend, or anything else to exit.
+-->
+Enter any additional alphanumeric comments or press Enter
+-->update readme
+______________________________________________________________ 
+ 
+CLOCKED TASK: POISM:dev  potimer (0h1m7s) ; update readme 
+CLOCKED TIME: 1 minutes 7 seconds (originally 1 minutes) 
+______________________________________________________________ 
+ 
+i 2024/01/28 10:02:20 POISM:dev  potimer (0h1m7s) ; update readme 
+o 2024/01/28 10:03:27
+______________________________________________________________ 
+ 
+Add to TimeClockPo google calendar?
+Confirm? [y/n] y 
+OK: Added to google calendar TimeClockPo 
+______________________________________________________________ 
+ 
+BALANCE for this POISM:dev account:
+ 8.16h  POISM:dev
+-------------------- 
+ 8.16h 
+______________________________________________________________ 
 
-FINISHED: POISM:adm duration was 45 minutes and 0 seconds.
-
-Do you wish to extend the current task timer? Enter additional integer minutes to extend, or [0/n/nothing] to end timer.
---> n
-
-
-______________________________________________________________
-
-i 2024/01/21 12:00:00 POISM:adm  get frustrated using google calendar
-o 2024/01/21 12:45:00
-______________________________________________________________
-
-Balance for this POISM:adm account:
-
-               0.75h  POISM:adm
---------------------
-               0.75h
 
 ```
+
+### Example adding a retroactive task:
+
+Forgot to start the timer? No problem, when you finish just use a negative time to retroactively add a task.
+
+
+```
+sangpo@ubu-po:~$ potime -60 POISM:dev potimer
+RETROACTIVE: Adding an event that just ended.
+______________________________________________________________ 
+ 
+TASK: POISM:dev potimer 
+TIMER: 60 minutes 0 seconds.
+______________________________________________________________ 
+ 
+Enter any additional alphanumeric comments or press Enter
+-->retroactive and view mode
+______________________________________________________________
+
+CLOCKED TASK: POISM:dev  potimer (1h0m0s) ; retroactive and view mode
+CLOCKED TIME: 60 minutes 0 seconds (originally  minutes)
+______________________________________________________________
+
+i 2024/01/28 08:53:27 POISM:dev  potimer (1h0m0s) ; retroactive and view mode
+o 2024/01/28 09:53:27
+______________________________________________________________
+
+Add to TimeClockPo google calendar?
+Confirm? [y/n] y
+OK: Added to google calendar TimeClockPo
+______________________________________________________________
+
+BALANCE for this POISM:dev account:
+               8.14h  POISM:dev
+--------------------
+               8.14h
+______________________________________________________________
+
+
+```
+
 
 ### More examples output ommitted
 

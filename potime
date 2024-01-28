@@ -179,15 +179,24 @@ function addtogooglecalendar() {
 
 function clockout() {
 	interrupted=1
-	if [ "$SECONDS" -lt "60" ]; then
+	if [ -z "${retroactive}" ] && [ "$SECONDS" -lt "60" ]; then
 		echo -e "\n"
 		echo -e "${hrule}"
 		echo "WARNING: Duration less than 1 minute, not worth reporting. Exiting timer."
 		echo -e "${hrule}"
 		exit
 	fi
-	duration=$SECONDS
-	endtime=$(date "+%Y/%m/%d %H:%M:%S")
+	if [ -z "${retroactive}" ]; then
+		duration=$SECONDS
+		endtime=$(date "+%Y/%m/%d %H:%M:%S")
+	else
+		echo "RETROACTIVE: Adding an event that just ended."
+		duration=${maxseconds}
+		endsec=$(date +%s)
+		startsec=$(( ${endsec} - ${duration} ))
+		endtime=$(date --date "@${endsec}" "+%Y/%m/%d %H:%M:%S")
+		starttime=$(date --date "@${startsec}" "+%Y/%m/%d %H:%M:%S")
+	fi
 	clockhrs=$(( ${duration} / 3600 ))
 	clockmin=$(( ${duration} % 3600 / 60))
 	clockminonly=$(( ${duration} / 60))
@@ -200,7 +209,7 @@ function clockout() {
 	echo "TIMER: ${durationstr}."
 	echo -e "${hrule}"
 
-	if extendtimer; then
+	if [ -z "${retroactive}" ] && extendtimer; then
 		echo -e "\n"
 		echo "Extending timer for ${account} by ${maxminutes} additional minutes..."
 		echo -e "\n"
@@ -261,7 +270,13 @@ function clockout() {
 	fi
 }
 
-if [[ $1 =~ ^[0-9]+$ ]]; then
+###### GO ######
+if [[ $1 =~ ^-[0-9]+$ ]]; then
+	retroactive=1
+	maxminutes=${1/#-/}
+	maxseconds=$(( ${maxminutes} * 60))
+
+elif [[ $1 =~ ^[0-9]+$ ]]; then
 	maxminutes=${1}
 	maxseconds=$(( ${maxminutes} * 60))
 else
@@ -269,6 +284,7 @@ else
 	helpmsg
 	exit 1
 fi
+
 account="${2}"
 description="${@:3}"
 descriptionclean="${description//[^[:alnum:-_\. ]]/_}"
@@ -284,6 +300,10 @@ totalminutes=${maxminutes}
 hrule="______________________________________________________________\n"
 
 alldone=0
+
+if [ ! -z "${retroactive}" ]; then
+	clockout
+fi
 
 # Catch any CTRL+C or exits to clockout function
 trap clockout SIGINT
